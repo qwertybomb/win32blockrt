@@ -35,7 +35,7 @@ static inline bool OSAtomicCompareAndSwapInt(int oldi, int newi, int volatile *d
  /*
   * Globals:
   */
-
+  
 static void *_Block_copy_class = _NSConcreteMallocBlock;
 static void *_Block_copy_finalizing_class = _NSConcreteMallocBlock;
 static int _Block_copy_flag = BLOCK_NEEDS_FREE;
@@ -120,7 +120,7 @@ static int latching_decr_int(int *where)
 #endif /* if 0 */
 
 
-static void *_Block_alloc_default(const size_t size, const bool initialCountIsOne, const bool isObject)
+static void *_Block_alloc_default(const long unsigned size, const bool initialCountIsOne, const bool isObject)
 {
 	(void)initialCountIsOne, (void)isObject;
     return malloc(size);
@@ -153,12 +153,12 @@ static void _Block_assign_weak_default(const void *ptr, void *dest)
     *(void **)dest = (void *)ptr;
 }
 
-static void _Block_memmove_default(void *dst, void *src, size_t size)
+static void _Block_memmove_default(void *dst, void *src, long unsigned size)
 {
     memmove(dst, src, size);
 }
 
-static void _Block_memmove_gc_broken(void *dest, void *src, size_t size)
+static void _Block_memmove_gc_broken(void *dest, void *src, long unsigned size)
 {
     void **destp = (void **)dest;
     void **srcp = (void **)src;
@@ -174,14 +174,14 @@ static void _Block_memmove_gc_broken(void *dest, void *src, size_t size)
  * GC support callout functions - initially set to stub routines:
  */
 
-static void *(*_Block_allocator)(const size_t, const bool isOne, const bool isObject) = _Block_alloc_default;
+static void *(*_Block_allocator)(const long unsigned, const bool isOne, const bool isObject) = _Block_alloc_default;
 static void (*_Block_deallocator)(const void *) = (void (*)(const void *))free;
 static void (*_Block_assign)(void *value, void **destptr) = _Block_assign_default;
 static void (*_Block_setHasRefcount)(const void *ptr, const bool hasRefcount) = _Block_setHasRefcount_default;
 static void (*_Block_retain_object)(const void *ptr) = _Block_retain_object_default;
 static void (*_Block_release_object)(const void *ptr) = _Block_release_object_default;
 static void (*_Block_assign_weak)(const void *dest, void *ptr) = _Block_assign_weak_default;
-static void (*_Block_memmove)(void *dest, void *src, size_t size) = _Block_memmove_default;
+static void (*_Block_memmove)(void *dest, void *src, long unsigned size) = _Block_memmove_default;
 
 
 /*
@@ -192,11 +192,11 @@ static void (*_Block_memmove)(void *dest, void *src, size_t size) = _Block_memmo
   * Called from objc-auto to turn on GC.
   * version 3, 4 arg, but changed 1st arg
   */
-void _Block_use_GC(void *(*alloc)(const size_t, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC(void *(*alloc)(const long unsigned, const bool isOne, const bool isObject),
     void (*setHasRefcount)(const void *, const bool),
     void (*gc_assign)(void *, void **),
     void (*gc_assign_weak)(const void *, void *),
-    void (*gc_memmove)(void *, void *, size_t))
+    void (*gc_memmove)(void *, void *, long unsigned))
 {
 
     isGC = true;
@@ -216,7 +216,7 @@ void _Block_use_GC(void *(*alloc)(const size_t, const bool isOne, const bool isO
 }
 
 /* transitional */
-void _Block_use_GC5(void *(*alloc)(const size_t, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC5(void *(*alloc)(const long unsigned, const bool isOne, const bool isObject),
     void (*setHasRefcount)(const void *, const bool),
     void (*gc_assign)(void *, void **),
     void (*gc_assign_weak)(const void *, void *))
@@ -233,7 +233,7 @@ void _Block_use_GC5(void *(*alloc)(const size_t, const bool isOne, const bool is
  * Blocks and Block_byrefs have their own special entry points.
  *
  */
-void _Block_use_RR(void (*retain)(const void *),
+BLOCK_EXPORT void _Block_use_RR(void (*retain)(const void *),
     void (*release)(const void *))
 {
     _Block_retain_object = retain;
@@ -405,14 +405,14 @@ static void _Block_byref_release(const void *arg)
  *
  */
 
-void *_Block_copy(const void *arg)
+BLOCK_EXPORT void *_Block_copy(const void *arg)
 {
     return _Block_copy_internal(arg, WANTS_ONE);
 }
 
 
 // API entry point to release a copied Block
-void _Block_release(void *arg)
+BLOCK_EXPORT void _Block_release(void *arg)
 {
     struct Block_layout *aBlock = (struct Block_layout *)arg;
     int newCount;
@@ -459,14 +459,14 @@ static void _Block_destroy(const void *arg)
  */
 
  // SPI, also internal.  Called from NSAutoBlock only under GC
-void *_Block_copy_collectable(const void *aBlock)
+BLOCK_EXPORT void *_Block_copy_collectable(const void *aBlock)
 {
     return _Block_copy_internal(aBlock, 0);
 }
 
 
 // SPI
-unsigned long int Block_size(void *arg)
+BLOCK_EXPORT unsigned long int Block_size(void *arg)
 {
     return ((struct Block_layout *)arg)->descriptor->size;
 }
@@ -509,7 +509,7 @@ The implementation of the two routines would be improved by switch statements en
  * When Blocks or Block_byrefs hold objects then their copy routine helpers use this entry point
  * to do the assignment.
  */
-void _Block_object_assign(void *destAddr, const void *object, const int flags)
+BLOCK_EXPORT void _Block_object_assign(void *destAddr, const void *object, const int flags)
 {
     //printf("_Block_object_assign(*%p, %p, %x)\n", destAddr, object, flags);
     if ((flags & BLOCK_BYREF_CALLER) == BLOCK_BYREF_CALLER) {
@@ -541,7 +541,7 @@ void _Block_object_assign(void *destAddr, const void *object, const int flags)
 // When Blocks or Block_byrefs hold objects their destroy helper routines call this entry point
 // to help dispose of the contents
 // Used initially only for __attribute__((NSObject)) marked pointers.
-void _Block_object_dispose(const void *object, const int flags)
+BLOCK_EXPORT void _Block_object_dispose(const void *object, const int flags)
 {
     //printf("_Block_object_dispose(%p, %x)\n", object, flags);
     if (flags & BLOCK_FIELD_IS_BYREF) {
@@ -563,7 +563,7 @@ void _Block_object_dispose(const void *object, const int flags)
  * Debugging support:
  */
 
-const char *_Block_dump(const void *block)
+BLOCK_EXPORT const char *_Block_dump(const void *block)
 {
     struct Block_layout *closure = (struct Block_layout *)block;
     static char buffer[512];
@@ -613,8 +613,8 @@ const char *_Block_dump(const void *block)
     {
         struct Block_descriptor *dp = closure->descriptor;
         cp += sprintf(cp, "descriptor: %p\n", (void *)dp);
-        cp += sprintf(cp, "descriptor->reserved: %zu\n", dp->reserved);
-        cp += sprintf(cp, "descriptor->size: %zu\n", dp->size);
+        cp += sprintf(cp, "descriptor->reserved: %lu\n", dp->reserved);
+        cp += sprintf(cp, "descriptor->size: %lu\n", dp->size);
 
         if (closure->flags & BLOCK_HAS_COPY_DISPOSE) {
             cp += sprintf(cp, "descriptor->copy helper: %p\n", (void *)(uintptr_t)dp->copy);
@@ -626,7 +626,7 @@ const char *_Block_dump(const void *block)
 }
 
 
-const char *_Block_byref_dump(struct Block_byref *src)
+BLOCK_EXPORT const char *_Block_byref_dump(struct Block_byref *src)
 {
     static char buffer[256];
     char *cp = buffer;
@@ -649,4 +649,4 @@ void *_NSConcreteFinalizingBlock[32] = { 0 };
 void *_NSConcreteGlobalBlock[32] = { 0 };
 void *_NSConcreteWeakBlockVariable[32] = { 0 };
 
-void _Block_copy_error(void) {}
+BLOCK_EXPORT void _Block_copy_error(void) {}

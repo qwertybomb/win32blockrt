@@ -57,8 +57,8 @@ enum {
 
 /* Revised new layout. */
 struct Block_descriptor {
-    size_t reserved;
-    size_t size;
+    long unsigned reserved;
+    long unsigned size;
     void (*copy)(void *dst, void *src);
     void (*dispose)(void *);
 };
@@ -119,8 +119,6 @@ BLOCK_EXPORT void _Block_object_dispose(const void *object, const int flags);
 /* Runtime entry to get total size of a closure */
 BLOCK_EXPORT unsigned long int Block_size(void *block_basic);
 
-
-
 /* the raw data space for runtime classes for blocks */
 /* class+meta used for stack, malloc, and collectable based blocks */
 BLOCK_EXPORT void * _NSConcreteStackBlock[32];
@@ -132,14 +130,14 @@ BLOCK_EXPORT void * _NSConcreteWeakBlockVariable[32];
 
 
 /* the intercept routines that must be used under GC */
-BLOCK_EXPORT void _Block_use_GC( void *(*alloc)(const size_t, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC( void *(*alloc)(const long unsigned, const bool isOne, const bool isObject),
                                   void (*setHasRefcount)(const void *, const bool),
                                   void (*gc_assign_strong)(void *, void **),
                                   void (*gc_assign_weak)(const void *, void *),
-                                  void (*gc_memmove)(void *, void *, size_t));
+                                  void (*gc_memmove)(void *, void *, long unsigned));
 
 /* earlier version, now simply transitional */
-BLOCK_EXPORT void _Block_use_GC5( void *(*alloc)(size_t, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC5( void *(*alloc)(long unsigned, const bool isOne, const bool isObject),
                                   void (*setHasRefcount)(const void *, const bool),
                                   void (*gc_assign_strong)(void *, void **),
                                   void (*gc_assign_weak)(const void *, void *));
@@ -154,7 +152,6 @@ BLOCK_EXPORT void *_Block_copy_collectable(const void *aBlock);
 BLOCK_EXPORT const char *_Block_dump(const void *block);
 
 
-/* Obsolete */
 
 /* first layout */
 struct Block_basic {
