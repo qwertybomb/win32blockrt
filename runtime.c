@@ -25,10 +25,10 @@
 #include "Block_private.h"
 #include "crt.c"
 
-static inline bool OSAtomicCompareAndSwapInt(int oldi, int newi, int volatile *dst)
+static inline bool OSAtomicCompareAndSwapInt(int32_t oldi, int32_t newi, int32_t volatile *dst)
 {
     /* fixme barrier is overkill -- see objc-os.h */
-    int original = InterlockedCompareExchange((long volatile*)dst, newi, oldi);
+    int32_t original = InterlockedCompareExchange((long volatile*)dst, newi, oldi);
     return (original == oldi);
 }
 
@@ -38,10 +38,10 @@ static inline bool OSAtomicCompareAndSwapInt(int oldi, int newi, int volatile *d
   
 static void *_Block_copy_class = _NSConcreteMallocBlock;
 static void *_Block_copy_finalizing_class = _NSConcreteMallocBlock;
-static int _Block_copy_flag = BLOCK_NEEDS_FREE;
-static int _Byref_flag_initial_value = BLOCK_NEEDS_FREE | 2;
+static int32_t _Block_copy_flag = BLOCK_NEEDS_FREE;
+static int32_t _Byref_flag_initial_value = BLOCK_NEEDS_FREE | 2;
 
-static const int WANTS_ONE = (1 << 16);
+static const int32_t WANTS_ONE = (1 << 16);
 
 static bool isGC = false;
 
@@ -64,7 +64,7 @@ static unsigned long int latching_incr_long(unsigned long int *where)
 }
 #endif /* if 0 */
 
-static int latching_incr_int(int *where)
+static int32_t latching_incr_int(int *where)
 {
     while (1) {
         int old_value = *(volatile int *)where;
@@ -95,7 +95,7 @@ static int latching_decr_long(unsigned long int *where)
 }
 #endif /* if 0 */
 
-static int latching_decr_int(int *where)
+static int32_t latching_decr_int(int32_t *where)
 {
     while (1) {
         int old_value = *(volatile int *)where;
@@ -120,7 +120,7 @@ static int latching_decr_int(int *where)
 #endif /* if 0 */
 
 
-static void *_Block_alloc_default(const long unsigned size, const bool initialCountIsOne, const bool isObject)
+static void *_Block_alloc_default(const uint32_t size, const bool initialCountIsOne, const bool isObject)
 {
 	(void)initialCountIsOne, (void)isObject;
     return malloc(size);
@@ -153,12 +153,12 @@ static void _Block_assign_weak_default(const void *ptr, void *dest)
     *(void **)dest = (void *)ptr;
 }
 
-static void _Block_memmove_default(void *dst, void *src, long unsigned size)
+static void _Block_memmove_default(void *dst, void *src, uint32_t size)
 {
     memmove(dst, src, size);
 }
 
-static void _Block_memmove_gc_broken(void *dest, void *src, long unsigned size)
+static void _Block_memmove_gc_broken(void *dest, void *src, uint32_t size)
 {
     void **destp = (void **)dest;
     void **srcp = (void **)src;
@@ -174,14 +174,14 @@ static void _Block_memmove_gc_broken(void *dest, void *src, long unsigned size)
  * GC support callout functions - initially set to stub routines:
  */
 
-static void *(*_Block_allocator)(const long unsigned, const bool isOne, const bool isObject) = _Block_alloc_default;
+static void *(*_Block_allocator)(const uint32_t, const bool isOne, const bool isObject) = _Block_alloc_default;
 static void (*_Block_deallocator)(const void *) = (void (*)(const void *))free;
 static void (*_Block_assign)(void *value, void **destptr) = _Block_assign_default;
 static void (*_Block_setHasRefcount)(const void *ptr, const bool hasRefcount) = _Block_setHasRefcount_default;
 static void (*_Block_retain_object)(const void *ptr) = _Block_retain_object_default;
 static void (*_Block_release_object)(const void *ptr) = _Block_release_object_default;
 static void (*_Block_assign_weak)(const void *dest, void *ptr) = _Block_assign_weak_default;
-static void (*_Block_memmove)(void *dest, void *src, long unsigned size) = _Block_memmove_default;
+static void (*_Block_memmove)(void *dest, void *src, uint32_t size) = _Block_memmove_default;
 
 
 /*
@@ -192,11 +192,11 @@ static void (*_Block_memmove)(void *dest, void *src, long unsigned size) = _Bloc
   * Called from objc-auto to turn on GC.
   * version 3, 4 arg, but changed 1st arg
   */
-BLOCK_EXPORT void _Block_use_GC(void *(*alloc)(const long unsigned, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC(void *(*alloc)(const uint32_t, const bool isOne, const bool isObject),
     void (*setHasRefcount)(const void *, const bool),
     void (*gc_assign)(void *, void **),
     void (*gc_assign_weak)(const void *, void *),
-    void (*gc_memmove)(void *, void *, long unsigned))
+    void (*gc_memmove)(void *, void *, uint32_t))
 {
 
     isGC = true;
@@ -216,7 +216,7 @@ BLOCK_EXPORT void _Block_use_GC(void *(*alloc)(const long unsigned, const bool i
 }
 
 /* transitional */
-BLOCK_EXPORT void _Block_use_GC5(void *(*alloc)(const long unsigned, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC5(void *(*alloc)(const uint32_t, const bool isOne, const bool isObject),
     void (*setHasRefcount)(const void *, const bool),
     void (*gc_assign)(void *, void **),
     void (*gc_assign_weak)(const void *, void *))
@@ -245,7 +245,7 @@ BLOCK_EXPORT void _Block_use_RR(void (*retain)(const void *),
  */
 
  /* Copy, or bump refcount, of a block.  If really copying, call the copy helper if present. */
-static void *_Block_copy_internal(const void *arg, const int flags)
+static void *_Block_copy_internal(const void *arg, const int32_t flags)
 {
     struct Block_layout *aBlock;
     const bool wantsOne = (WANTS_ONE & flags) == WANTS_ONE;
@@ -288,7 +288,7 @@ static void *_Block_copy_internal(const void *arg, const int flags)
     } else {
         // Under GC want allocation with refcount 1 so we ask for "true" if wantsOne
         // This allows the copy helper routines to make non-refcounted block copies under GC
-        unsigned long int flags = aBlock->flags;
+        uint32_t flags = aBlock->flags;
         bool hasCTOR = (flags & BLOCK_HAS_CTOR) != 0;
         struct Block_layout *result = _Block_allocator(aBlock->descriptor->size, wantsOne, hasCTOR);
         if (!result) return (void *)0;
@@ -325,7 +325,7 @@ static void *_Block_copy_internal(const void *arg, const int flags)
  * XXX We need to account for weak/nonretained read-write barriers.
  */
 
-static void _Block_byref_assign_copy(void *dest, const void *arg, const int flags)
+static void _Block_byref_assign_copy(void *dest, const void *arg, const int32_t flags)
 {
     struct Block_byref **destp = (struct Block_byref **)dest;
     struct Block_byref *src = (struct Block_byref *)arg;
@@ -466,7 +466,7 @@ BLOCK_EXPORT void *_Block_copy_collectable(const void *aBlock)
 
 
 // SPI
-BLOCK_EXPORT unsigned long int Block_size(void *arg)
+BLOCK_EXPORT uint32_t Block_size(void *arg)
 {
     return ((struct Block_layout *)arg)->descriptor->size;
 }
@@ -509,7 +509,7 @@ The implementation of the two routines would be improved by switch statements en
  * When Blocks or Block_byrefs hold objects then their copy routine helpers use this entry point
  * to do the assignment.
  */
-BLOCK_EXPORT void _Block_object_assign(void *destAddr, const void *object, const int flags)
+BLOCK_EXPORT void _Block_object_assign(void *destAddr, const void *object, const int32_t flags)
 {
     //printf("_Block_object_assign(*%p, %p, %x)\n", destAddr, object, flags);
     if ((flags & BLOCK_BYREF_CALLER) == BLOCK_BYREF_CALLER) {
@@ -613,8 +613,8 @@ BLOCK_EXPORT const char *_Block_dump(const void *block)
     {
         struct Block_descriptor *dp = closure->descriptor;
         cp += sprintf(cp, "descriptor: %p\n", (void *)dp);
-        cp += sprintf(cp, "descriptor->reserved: %lu\n", dp->reserved);
-        cp += sprintf(cp, "descriptor->size: %lu\n", dp->size);
+        cp += sprintf(cp, "descriptor->reserved: %" PRIu32 "\n", dp->reserved);
+        cp += sprintf(cp, "descriptor->size: %" PRIu32 "\n", dp->size);
 
         if (closure->flags & BLOCK_HAS_COPY_DISPOSE) {
             cp += sprintf(cp, "descriptor->copy helper: %p\n", (void *)(uintptr_t)dp->copy);

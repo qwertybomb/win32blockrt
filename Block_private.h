@@ -35,6 +35,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS 1
 #include <stdbool.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <stddef.h>
 
 #include <windows.h>
@@ -57,8 +59,8 @@ enum {
 
 /* Revised new layout. */
 struct Block_descriptor {
-    long unsigned reserved;
-    long unsigned size;
+    uint32_t reserved;
+    uint32_t size;
     void (*copy)(void *dst, void *src);
     void (*dispose)(void *);
 };
@@ -66,8 +68,8 @@ struct Block_descriptor {
 
 struct Block_layout {
     void *isa;
-    int flags;
-    int reserved; 
+    int32_t flags;
+    int32_t reserved; 
     void (*invoke)(void *, ...);
     struct Block_descriptor *descriptor;
     /* Imported variables. */
@@ -77,8 +79,8 @@ struct Block_layout {
 struct Block_byref {
     void *isa;
     struct Block_byref *forwarding;
-    int flags; /* refcount; */
-    int size;
+    int32_t flags; /* refcount; */
+    int32_t size;
     void (*byref_keep)(struct Block_byref *dst, struct Block_byref *src);
     void (*byref_destroy)(struct Block_byref *);
     /* long shared[0]; */
@@ -88,8 +90,8 @@ struct Block_byref {
 struct Block_byref_header {
     void *isa;
     struct Block_byref *forwarding;
-    int flags;
-    int size;
+    int32_t flags;
+    int32_t size;
 };
 
 
@@ -105,19 +107,19 @@ enum {
 };
 
 /* Runtime entry point called by compiler when assigning objects inside copy helper routines */
-BLOCK_EXPORT void _Block_object_assign(void *destAddr, const void *object, const int flags);
+BLOCK_EXPORT void _Block_object_assign(void *destAddr, const void *object, const int32_t flags);
     /* BLOCK_FIELD_IS_BYREF is only used from within block copy helpers */
 
 
 /* runtime entry point called by the compiler when disposing of objects inside dispose helper routine */
-BLOCK_EXPORT void _Block_object_dispose(const void *object, const int flags);
+BLOCK_EXPORT void _Block_object_dispose(const void *object, const int32_t flags);
 
 
 
 /* Other support functions */
 
 /* Runtime entry to get total size of a closure */
-BLOCK_EXPORT unsigned long int Block_size(void *block_basic);
+BLOCK_EXPORT uint32_t Block_size(void *block_basic);
 
 /* the raw data space for runtime classes for blocks */
 /* class+meta used for stack, malloc, and collectable based blocks */
@@ -130,14 +132,14 @@ BLOCK_EXPORT void * _NSConcreteWeakBlockVariable[32];
 
 
 /* the intercept routines that must be used under GC */
-BLOCK_EXPORT void _Block_use_GC( void *(*alloc)(const long unsigned, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC( void *(*alloc)(const uint32_t, const bool isOne, const bool isObject),
                                   void (*setHasRefcount)(const void *, const bool),
                                   void (*gc_assign_strong)(void *, void **),
                                   void (*gc_assign_weak)(const void *, void *),
-                                  void (*gc_memmove)(void *, void *, long unsigned));
+                                  void (*gc_memmove)(void *, void *, uint32_t));
 
 /* earlier version, now simply transitional */
-BLOCK_EXPORT void _Block_use_GC5( void *(*alloc)(long unsigned, const bool isOne, const bool isObject),
+BLOCK_EXPORT void _Block_use_GC5( void *(*alloc)(uint32_t, const bool isOne, const bool isObject),
                                   void (*setHasRefcount)(const void *, const bool),
                                   void (*gc_assign_strong)(void *, void **),
                                   void (*gc_assign_weak)(const void *, void *));
@@ -156,8 +158,8 @@ BLOCK_EXPORT const char *_Block_dump(const void *block);
 /* first layout */
 struct Block_basic {
     void *isa;
-    int Block_flags;  /* int32_t */
-    int Block_size;  /* XXX should be packed into Block_flags */
+    int32_t Block_flags;  /* int32_t */
+    int32_t Block_size;  /* XXX should be packed into Block_flags */
     void (*Block_invoke)(void *);
     void (*Block_copy)(void *dst, void *src);  /* iff BLOCK_HAS_COPY_DISPOSE */
     void (*Block_dispose)(void *);             /* iff BLOCK_HAS_COPY_DISPOSE */

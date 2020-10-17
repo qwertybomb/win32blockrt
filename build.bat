@@ -38,4 +38,3 @@ clang-cl /LD -%arch% /nologo /Oi /O2 /W4 /GS- /Gs9999999 ..\dllmain.c /link /sta
 
 popd
 :exit
-EXIT 0
